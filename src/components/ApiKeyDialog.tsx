@@ -54,7 +54,7 @@ export const ApiKeyDialog = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="flex items-center gap-2">
+        <Button id="openai-api-dialog-trigger" variant="outline" size="sm" className="flex items-center gap-2">
           <Settings className="h-4 w-4" />
           API Settings
         </Button>
