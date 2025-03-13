@@ -1,3 +1,4 @@
+
 import { Trade } from '../types/trade';
 import { toast } from '@/hooks/use-toast';
 
@@ -123,6 +124,7 @@ export const getTradeStatistics = () => {
       averageProfitLoss: 0,
       largestWin: 0,
       largestLoss: 0,
+      averageRiskPercentage: 0,
     };
   }
 
@@ -139,6 +141,12 @@ export const getTradeStatistics = () => {
     ? Math.min(...losingTrades.map(trade => trade.profitLoss || 0)) 
     : 0;
   
+  // Calculate average risk percentage for trades with that info
+  const tradesWithRisk = closedTrades.filter(trade => trade.riskPercentage !== undefined);
+  const averageRiskPercentage = tradesWithRisk.length > 0
+    ? tradesWithRisk.reduce((sum, trade) => sum + (trade.riskPercentage || 0), 0) / tradesWithRisk.length
+    : 0;
+  
   return {
     totalTrades: closedTrades.length,
     winningTrades: winningTrades.length,
@@ -148,5 +156,6 @@ export const getTradeStatistics = () => {
     averageProfitLoss: totalProfitLoss / closedTrades.length,
     largestWin,
     largestLoss,
+    averageRiskPercentage,
   };
 };

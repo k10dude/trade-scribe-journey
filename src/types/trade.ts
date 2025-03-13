@@ -21,6 +21,10 @@ export interface Trade {
   setup?: string;
   risk?: number;
   reward?: number;
-  screenshot?: string; // URL or base64 string
+  images?: string[]; // URLs or base64 strings for multiple images
   tags?: string[];
+  accountBalance?: number; // For risk management
+  stopLoss?: number; // For risk management
+  riskPercentage?: number; // Calculated risk percentage
+  riskManagementFeedback?: string; // Feedback from OpenAI
 }
