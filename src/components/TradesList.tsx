@@ -10,7 +10,11 @@ import { Search, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 
-export default function TradesList() {
+interface TradesListProps {
+  limit?: number;
+}
+
+export default function TradesList({ limit }: TradesListProps = {}) {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [filteredTrades, setFilteredTrades] = useState<Trade[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,6 +77,11 @@ export default function TradesList() {
         break;
       default:
         result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+    
+    // Apply limit if provided
+    if (limit && limit > 0) {
+      result = result.slice(0, limit);
     }
     
     setFilteredTrades(result);
