@@ -1,6 +1,8 @@
 
 import { toast } from '@/hooks/use-toast';
 
+const API_KEY_STORAGE_KEY = 'trade-journal-openai-api-key';
+
 export const calculateRiskPercentage = (
   price: number,
   quantity: number,
@@ -26,6 +28,12 @@ export const generateRiskFeedback = async (
     return "Add your account balance and stop-loss to receive risk management feedback.";
   }
 
+  // Get API key from localStorage
+  const apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+  if (!apiKey) {
+    return "Please set your OpenAI API key in API Settings to receive personalized risk management feedback.";
+  }
+
   try {
     const prompt = `As a trading risk management advisor, provide brief feedback (1-2 sentences) on this trade:
 - Symbol: ${symbol}
@@ -39,7 +47,7 @@ Focus on whether the risk percentage is appropriate, and suggest any improvement
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY || ''}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
