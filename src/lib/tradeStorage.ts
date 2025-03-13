@@ -1,6 +1,5 @@
-
 import { Trade } from '../types/trade';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/hooks/use-toast';
 
 // Local storage key
 const TRADES_STORAGE_KEY = 'trading-journal-trades';

@@ -45,7 +45,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { motion } from 'framer-motion';
 
@@ -114,15 +114,25 @@ export default function TradeEntryForm() {
         profitLossPercentage = (profitLoss / entryValue) * 100;
       }
       
-      // Create new trade object
+      // Create new trade object with required fields
       const newTrade: Trade = {
         id: uuidv4(),
-        ...rest,
+        symbol: rest.symbol,
+        date: format(rest.date, "yyyy-MM-dd"),
+        type: rest.type,
+        price: rest.price,
+        quantity: rest.quantity,
+        status: rest.status,
+        sentiment: rest.sentiment,
         exitPrice: exitPrice,
         exitDate: exitDate ? format(exitDate, "yyyy-MM-dd") : undefined,
-        date: format(rest.date, "yyyy-MM-dd"),
         profitLoss,
         profitLossPercentage,
+        strategy: rest.strategy,
+        setup: rest.setup,
+        risk: rest.risk,
+        reward: rest.reward,
+        notes: rest.notes,
       };
       
       // Add trade to storage
