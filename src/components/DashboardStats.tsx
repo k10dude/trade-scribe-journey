@@ -6,6 +6,18 @@ import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
+interface StatsData {
+  totalTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  winRate: number;
+  totalProfitLoss: number;
+  averageProfitLoss: number;
+  largestWin: number;
+  largestLoss: number;
+  averageRiskPercentage: number;
+}
+
 interface StatCardProps {
   title: string;
   value: string | number;
@@ -50,11 +62,33 @@ const StatCard = ({ title, value, description, icon, color, trend, delay = 0 }: 
 };
 
 export default function DashboardStats() {
-  const [stats, setStats] = useState(getTradeStatistics());
+  const [stats, setStats] = useState<StatsData>({
+    totalTrades: 0,
+    winningTrades: 0,
+    losingTrades: 0,
+    winRate: 0,
+    totalProfitLoss: 0,
+    averageProfitLoss: 0,
+    largestWin: 0,
+    largestLoss: 0,
+    averageRiskPercentage: 0
+  });
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     // Update stats when component mounts
-    setStats(getTradeStatistics());
+    const fetchStats = async () => {
+      try {
+        const data = await getTradeStatistics();
+        setStats(data);
+      } catch (error) {
+        console.error("Error fetching trade statistics:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStats();
   }, []);
   
   const formatCurrency = (value: number) => {
@@ -71,6 +105,20 @@ export default function DashboardStats() {
       maximumFractionDigits: 1
     }).format(value / 100);
   };
+  
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, index) => (
+          <Card key={index} className="overflow-hidden border border-border">
+            <CardContent className="p-6">
+              <div className="animate-pulse h-24"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

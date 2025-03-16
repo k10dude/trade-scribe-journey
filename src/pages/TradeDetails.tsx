@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getTradeById, deleteTrade } from '@/lib/tradeStorage';
@@ -30,19 +29,32 @@ export default function TradeDetails() {
   const navigate = useNavigate();
   
   useEffect(() => {
-    if (id) {
-      const fetchedTrade = getTradeById(id);
-      if (fetchedTrade) {
-        setTrade(fetchedTrade);
+    const fetchTrade = async () => {
+      if (id) {
+        try {
+          const fetchedTrade = await getTradeById(id);
+          if (fetchedTrade) {
+            setTrade(fetchedTrade);
+          }
+        } catch (error) {
+          console.error("Error fetching trade:", error);
+        } finally {
+          setLoading(false);
+        }
       }
-      setLoading(false);
-    }
+    };
+    
+    fetchTrade();
   }, [id]);
   
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (id) {
-      deleteTrade(id);
-      navigate('/trades');
+      try {
+        await deleteTrade(id);
+        navigate('/trades');
+      } catch (error) {
+        console.error("Error deleting trade:", error);
+      }
     }
   };
   

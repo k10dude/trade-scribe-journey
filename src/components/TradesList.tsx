@@ -21,11 +21,22 @@ export default function TradesList({ limit }: TradesListProps = {}) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('dateDesc');
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    const loadedTrades = getTrades();
-    setTrades(loadedTrades);
-    setFilteredTrades(loadedTrades);
+    const fetchTrades = async () => {
+      try {
+        const loadedTrades = await getTrades();
+        setTrades(loadedTrades);
+        setFilteredTrades(loadedTrades);
+      } catch (error) {
+        console.error("Error fetching trades:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTrades();
   }, []);
   
   useEffect(() => {
@@ -94,6 +105,14 @@ export default function TradesList({ limit }: TradesListProps = {}) {
   };
   
   const hasActiveFilters = searchTerm || statusFilter !== 'all' || typeFilter !== 'all';
+  
+  if (loading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-pulse text-muted-foreground">Loading trades...</div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
