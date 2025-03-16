@@ -74,15 +74,19 @@ export default function DashboardStats() {
     averageRiskPercentage: 0
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     // Update stats when component mounts
     const fetchStats = async () => {
       try {
+        setLoading(true);
         const data = await getTradeStatistics();
         setStats(data);
+        setError(null);
       } catch (error) {
         console.error("Error fetching trade statistics:", error);
+        setError("Failed to load statistics. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -116,6 +120,14 @@ export default function DashboardStats() {
             </CardContent>
           </Card>
         ))}
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-red-500">{error}</p>
       </div>
     );
   }
