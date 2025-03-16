@@ -1,14 +1,22 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-// Default values for development - these will be replaced with actual values
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project-url.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+// Try to get Supabase credentials from localStorage first, fall back to environment variables
+const getSupabaseCredentials = () => {
+  const storedUrl = localStorage.getItem('supabase_url');
+  const storedKey = localStorage.getItem('supabase_key');
+  
+  return {
+    url: storedUrl || import.meta.env.VITE_SUPABASE_URL || 'https://your-project-url.supabase.co',
+    key: storedKey || import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
+  };
+};
 
 let supabase;
 
 try {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { url, key } = getSupabaseCredentials();
+  supabase = createClient(url, key);
   console.log("Supabase client initialized");
 } catch (error) {
   console.error("Failed to initialize Supabase client:", error);

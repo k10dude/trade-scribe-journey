@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, LogIn, User } from 'lucide-react';
+import { Eye, EyeOff, LogIn, User, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,15 +10,29 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
+import { SupabaseCredentialsDialog } from '@/components/SupabaseCredentialsDialog';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showCredentialsDialog, setShowCredentialsDialog] = useState(false);
   const navigate = useNavigate();
 
+  // Check if Supabase credentials are set
+  const hasSupabaseCredentials = () => {
+    const url = localStorage.getItem('supabase_url');
+    const key = localStorage.getItem('supabase_key');
+    return !!(url && key);
+  };
+
   useEffect(() => {
+    // Show credentials dialog if Supabase is not configured
+    if (!hasSupabaseCredentials()) {
+      setShowCredentialsDialog(true);
+    }
+
     // Check if user is already logged in
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
@@ -217,7 +231,7 @@ const Auth = () => {
                     </p>
                   </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="flex flex-col gap-2">
                   <Button 
                     className="w-full" 
                     type="submit"
@@ -239,12 +253,29 @@ const Auth = () => {
               </form>
             </TabsContent>
           </Tabs>
+          
+          <div className="px-6 pb-6 pt-2">
+            <Button
+              variant="outline"
+              type="button"
+              className="w-full"
+              onClick={() => setShowCredentialsDialog(true)}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Configure Supabase Connection
+            </Button>
+          </div>
         </Card>
         
         <p className="text-center text-sm text-muted-foreground mt-4">
           By continuing, you agree to our Terms of Service and Privacy Policy.
         </p>
       </motion.div>
+      
+      <SupabaseCredentialsDialog
+        open={showCredentialsDialog}
+        onOpenChange={setShowCredentialsDialog}
+      />
     </div>
   );
 };
