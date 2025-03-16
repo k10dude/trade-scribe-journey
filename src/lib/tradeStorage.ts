@@ -1,18 +1,20 @@
 
 import { Trade } from '../types/trade';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from './supabase';
 
-// Local storage key
-const TRADES_STORAGE_KEY = 'trading-journal-trades';
-
-// Get all trades from localStorage
-export const getTrades = (): Trade[] => {
+// Get all trades from Supabase
+export const getTrades = async (): Promise<Trade[]> => {
   try {
-    const tradesJson = localStorage.getItem(TRADES_STORAGE_KEY);
-    if (!tradesJson) return [];
-    return JSON.parse(tradesJson);
-  } catch (error) {
-    console.error('Error fetching trades from localStorage:', error);
+    const { data: trades, error } = await supabase
+      .from('trades')
+      .select('*')
+      .order('date', { ascending: false });
+
+    if (error) throw error;
+    return trades || [];
+  } catch (error: any) {
+    console.error('Error fetching trades from Supabase:', error);
     toast({
       title: 'Error fetching trades',
       description: 'Could not load your trades. Please try again.',
@@ -23,17 +25,20 @@ export const getTrades = (): Trade[] => {
 };
 
 // Add a new trade
-export const addTrade = (trade: Trade): void => {
+export const addTrade = async (trade: Trade): Promise<void> => {
   try {
-    const trades = getTrades();
-    trades.push(trade);
-    localStorage.setItem(TRADES_STORAGE_KEY, JSON.stringify(trades));
+    const { error } = await supabase
+      .from('trades')
+      .insert(trade);
+    
+    if (error) throw error;
+    
     toast({
       title: 'Trade added',
       description: `Successfully added ${trade.symbol} trade`,
     });
-  } catch (error) {
-    console.error('Error adding trade to localStorage:', error);
+  } catch (error: any) {
+    console.error('Error adding trade to Supabase:', error);
     toast({
       title: 'Error adding trade',
       description: 'Could not save your trade. Please try again.',
@@ -43,23 +48,21 @@ export const addTrade = (trade: Trade): void => {
 };
 
 // Update an existing trade
-export const updateTrade = (updatedTrade: Trade): void => {
+export const updateTrade = async (updatedTrade: Trade): Promise<void> => {
   try {
-    const trades = getTrades();
-    const tradeIndex = trades.findIndex(trade => trade.id === updatedTrade.id);
+    const { error } = await supabase
+      .from('trades')
+      .update(updatedTrade)
+      .eq('id', updatedTrade.id);
     
-    if (tradeIndex !== -1) {
-      trades[tradeIndex] = updatedTrade;
-      localStorage.setItem(TRADES_STORAGE_KEY, JSON.stringify(trades));
-      toast({
-        title: 'Trade updated',
-        description: `Successfully updated ${updatedTrade.symbol} trade`,
-      });
-    } else {
-      throw new Error('Trade not found');
-    }
-  } catch (error) {
-    console.error('Error updating trade in localStorage:', error);
+    if (error) throw error;
+    
+    toast({
+      title: 'Trade updated',
+      description: `Successfully updated ${updatedTrade.symbol} trade`,
+    });
+  } catch (error: any) {
+    console.error('Error updating trade in Supabase:', error);
     toast({
       title: 'Error updating trade',
       description: 'Could not update your trade. Please try again.',
@@ -69,22 +72,21 @@ export const updateTrade = (updatedTrade: Trade): void => {
 };
 
 // Delete a trade
-export const deleteTrade = (tradeId: string): void => {
+export const deleteTrade = async (tradeId: string): Promise<void> => {
   try {
-    const trades = getTrades();
-    const updatedTrades = trades.filter(trade => trade.id !== tradeId);
+    const { error } = await supabase
+      .from('trades')
+      .delete()
+      .eq('id', tradeId);
     
-    if (trades.length !== updatedTrades.length) {
-      localStorage.setItem(TRADES_STORAGE_KEY, JSON.stringify(updatedTrades));
-      toast({
-        title: 'Trade deleted',
-        description: 'Successfully deleted trade',
-      });
-    } else {
-      throw new Error('Trade not found');
-    }
-  } catch (error) {
-    console.error('Error deleting trade from localStorage:', error);
+    if (error) throw error;
+    
+    toast({
+      title: 'Trade deleted',
+      description: 'Successfully deleted trade',
+    });
+  } catch (error: any) {
+    console.error('Error deleting trade from Supabase:', error);
     toast({
       title: 'Error deleting trade',
       description: 'Could not delete your trade. Please try again.',
@@ -94,12 +96,18 @@ export const deleteTrade = (tradeId: string): void => {
 };
 
 // Get a single trade by ID
-export const getTradeById = (tradeId: string): Trade | undefined => {
+export const getTradeById = async (tradeId: string): Promise<Trade | undefined> => {
   try {
-    const trades = getTrades();
-    return trades.find(trade => trade.id === tradeId);
-  } catch (error) {
-    console.error('Error fetching trade by ID from localStorage:', error);
+    const { data, error } = await supabase
+      .from('trades')
+      .select('*')
+      .eq('id', tradeId)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    console.error('Error fetching trade by ID from Supabase:', error);
     toast({
       title: 'Error fetching trade',
       description: 'Could not load the trade details. Please try again.',
@@ -110,11 +118,57 @@ export const getTradeById = (tradeId: string): Trade | undefined => {
 };
 
 // Calculate profit/loss statistics
-export const getTradeStatistics = () => {
-  const trades = getTrades();
-  const closedTrades = trades.filter(trade => trade.status === 'closed' && trade.profitLoss !== undefined);
-  
-  if (closedTrades.length === 0) {
+export const getTradeStatistics = async () => {
+  try {
+    const trades = await getTrades();
+    const closedTrades = trades.filter(trade => trade.status === 'closed' && trade.profitLoss !== undefined);
+    
+    if (closedTrades.length === 0) {
+      return {
+        totalTrades: 0,
+        winningTrades: 0,
+        losingTrades: 0,
+        winRate: 0,
+        totalProfitLoss: 0,
+        averageProfitLoss: 0,
+        largestWin: 0,
+        largestLoss: 0,
+        averageRiskPercentage: 0,
+      };
+    }
+
+    const winningTrades = closedTrades.filter(trade => (trade.profitLoss || 0) > 0);
+    const losingTrades = closedTrades.filter(trade => (trade.profitLoss || 0) < 0);
+    
+    const totalProfitLoss = closedTrades.reduce((total, trade) => total + (trade.profitLoss || 0), 0);
+    
+    const largestWin = winningTrades.length > 0 
+      ? Math.max(...winningTrades.map(trade => trade.profitLoss || 0)) 
+      : 0;
+      
+    const largestLoss = losingTrades.length > 0 
+      ? Math.min(...losingTrades.map(trade => trade.profitLoss || 0)) 
+      : 0;
+    
+    // Calculate average risk percentage for trades with that info
+    const tradesWithRisk = closedTrades.filter(trade => trade.riskPercentage !== undefined);
+    const averageRiskPercentage = tradesWithRisk.length > 0
+      ? tradesWithRisk.reduce((sum, trade) => sum + (trade.riskPercentage || 0), 0) / tradesWithRisk.length
+      : 0;
+    
+    return {
+      totalTrades: closedTrades.length,
+      winningTrades: winningTrades.length,
+      losingTrades: losingTrades.length,
+      winRate: (winningTrades.length / closedTrades.length) * 100,
+      totalProfitLoss,
+      averageProfitLoss: totalProfitLoss / closedTrades.length,
+      largestWin,
+      largestLoss,
+      averageRiskPercentage,
+    };
+  } catch (error) {
+    console.error('Error calculating trade statistics:', error);
     return {
       totalTrades: 0,
       winningTrades: 0,
@@ -127,35 +181,4 @@ export const getTradeStatistics = () => {
       averageRiskPercentage: 0,
     };
   }
-
-  const winningTrades = closedTrades.filter(trade => (trade.profitLoss || 0) > 0);
-  const losingTrades = closedTrades.filter(trade => (trade.profitLoss || 0) < 0);
-  
-  const totalProfitLoss = closedTrades.reduce((total, trade) => total + (trade.profitLoss || 0), 0);
-  
-  const largestWin = winningTrades.length > 0 
-    ? Math.max(...winningTrades.map(trade => trade.profitLoss || 0)) 
-    : 0;
-    
-  const largestLoss = losingTrades.length > 0 
-    ? Math.min(...losingTrades.map(trade => trade.profitLoss || 0)) 
-    : 0;
-  
-  // Calculate average risk percentage for trades with that info
-  const tradesWithRisk = closedTrades.filter(trade => trade.riskPercentage !== undefined);
-  const averageRiskPercentage = tradesWithRisk.length > 0
-    ? tradesWithRisk.reduce((sum, trade) => sum + (trade.riskPercentage || 0), 0) / tradesWithRisk.length
-    : 0;
-  
-  return {
-    totalTrades: closedTrades.length,
-    winningTrades: winningTrades.length,
-    losingTrades: losingTrades.length,
-    winRate: (winningTrades.length / closedTrades.length) * 100,
-    totalProfitLoss,
-    averageProfitLoss: totalProfitLoss / closedTrades.length,
-    largestWin,
-    largestLoss,
-    averageRiskPercentage,
-  };
 };
